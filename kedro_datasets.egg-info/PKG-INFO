@@ -1,0 +1,101 @@
+Metadata-Version: 2.1
+Name: kedro-datasets
+Version: 1.2.0
+Summary: Kedro-Datasets is where you can find all of Kedro's data connectors.
+Author: Kedro
+License: Apache Software License (Apache 2.0)
+Project-URL: Source, https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
+Project-URL: Documentation, https://docs.kedro.org
+Project-URL: Tracker, https://github.com/kedro-org/kedro-plugins/issues
+Requires-Python: <3.11,>=3.7
+Description-Content-Type: text/markdown
+Provides-Extra: api
+Provides-Extra: biosequence
+Provides-Extra: dask
+Provides-Extra: databricks
+Provides-Extra: docs
+Provides-Extra: geopandas
+Provides-Extra: holoviews
+Provides-Extra: matplotlib
+Provides-Extra: networkx
+Provides-Extra: pandas
+Provides-Extra: pillow
+Provides-Extra: plotly
+Provides-Extra: polars
+Provides-Extra: redis
+Provides-Extra: snowflake
+Provides-Extra: spark
+Provides-Extra: svmlight
+Provides-Extra: tensorflow
+Provides-Extra: video
+Provides-Extra: yaml
+Provides-Extra: api.APIDataSet
+Provides-Extra: biosequence.BioSequenceDataSet
+Provides-Extra: dask.ParquetDataSet
+Provides-Extra: databricks.ManagedTableDataSet
+Provides-Extra: geopandas.GeoJSONDataSet
+Provides-Extra: holoviews.HoloviewsWriter
+Provides-Extra: matplotlib.MatplotlibWriter
+Provides-Extra: networkx.NetworkXDataSet
+Provides-Extra: pandas.CSVDataSet
+Provides-Extra: pandas.ExcelDataSet
+Provides-Extra: pandas.FeatherDataSet
+Provides-Extra: pandas.GBQTableDataSet
+Provides-Extra: pandas.GBQQueryDataSet
+Provides-Extra: pandas.HDFDataSet
+Provides-Extra: pandas.JSONDataSet
+Provides-Extra: pandas.ParquetDataSet
+Provides-Extra: pandas.SQLTableDataSet
+Provides-Extra: pandas.SQLQueryDataSet
+Provides-Extra: pandas.XMLDataSet
+Provides-Extra: pandas.GenericDataSet
+Provides-Extra: pillow.ImageDataSet
+Provides-Extra: plotly.PlotlyDataSet
+Provides-Extra: plotly.JSONDataSet
+Provides-Extra: polars.CSVDataSet
+Provides-Extra: snowflake.SnowparkTableDataSet
+Provides-Extra: spark.SparkDataSet
+Provides-Extra: spark.SparkHiveDataSet
+Provides-Extra: spark.SparkJDBCDataSet
+Provides-Extra: spark.DeltaTableDataSet
+Provides-Extra: svmlight.SVMLightDataSet
+Provides-Extra: tensorflow.TensorFlowModelDataSet
+Provides-Extra: video.VideoDataSet
+Provides-Extra: yaml.YAMLDataSet
+Provides-Extra: all
+
+# Kedro-Datasets
+
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python Version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9%20%7C%203.10-blue.svg)](https://pypi.org/project/kedro-datasets/)
+[![PyPI Version](https://badge.fury.io/py/kedro-datasets.svg)](https://pypi.org/project/kedro-datasets/)
+[![Code Style: Black](https://img.shields.io/badge/code%20style-black-black.svg)](https://github.com/ambv/black)
+
+A Kedro plugin that powers Kedro's DataCatalog.
+
+## Installation
+
+`kedro-datasets` is a Python plugin. To install it:
+
+```bash
+pip install kedro-datasets
+```
+
+# Datasets
+
+Welcome to `kedro_datasets`, the home of Kedro's data connectors. Here you will find `AbstractDataSet` implementations created by QuantumBlack and external contributors.
+
+## What `AbstractDataSet` implementations are supported?
+
+We support a range of data connectors, including CSV, Excel, Parquet, Feather, HDF5, JSON, Pickle, SQL Tables, SQL Queries, Spark DataFrames and more. We even allow support for working with images.
+
+These data connectors are supported with the APIs of `pandas`, `spark`, `networkx`, `matplotlib`, `yaml` and more.
+
+[The Data Catalog](https://kedro.readthedocs.io/en/stable/data/data_catalog.html) allows you to work with a range of file formats on local file systems, network file systems, cloud object stores, and Hadoop.
+
+Here is a full list of [supported data connectors and APIs](https://kedro.readthedocs.io/en/stable/kedro.datasets.html).
+
+## How can I create my own `AbstractDataSet` implementation?
+
+
+Take a look at our [instructions on how to create your own `AbstractDataSet` implementation](https://kedro.readthedocs.io/en/stable/extend_kedro/custom_datasets.html).
