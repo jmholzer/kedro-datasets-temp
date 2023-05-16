@@ -1,4 +1,4 @@
-"""``TensorFlowModelDataSet`` is a data set implementation which can save and load
+"""``TensorflowModelDataset`` is a data set implementation which can save and load
 TensorFlow models.
 """
 import copy
@@ -19,8 +19,8 @@ from kedro.io.core import (
 TEMPORARY_H5_FILE = "tmp_tensorflow_model.h5"
 
 
-class TensorFlowModelDataSet(AbstractVersionedDataSet[tf.keras.Model, tf.keras.Model]):
-    """``TensorFlowModelDataSet`` loads and saves TensorFlow models.
+class TensorFlowModelDataset(AbstractVersionedDataSet[tf.keras.Model, tf.keras.Model]):
+    """``TensorflowModelDataset`` loads and saves TensorFlow models.
     The underlying functionality is supported by, and passes input arguments through to,
     TensorFlow 2.X load_model and save_model methods.
 
@@ -31,7 +31,7 @@ class TensorFlowModelDataSet(AbstractVersionedDataSet[tf.keras.Model, tf.keras.M
     .. code-block:: yaml
 
         tensorflow_model:
-          type: tensorflow.TensorFlowModelDataSet
+          type: tensorflow.TensorFlowModelDataset
           filepath: data/06_models/tensorflow_model.h5
           load_args:
             compile: False
@@ -45,11 +45,11 @@ class TensorFlowModelDataSet(AbstractVersionedDataSet[tf.keras.Model, tf.keras.M
     data_catalog.html#use-the-data-catalog-with-the-code-api>`_:
     ::
 
-        >>> from kedro_datasets.tensorflow import TensorFlowModelDataSet
+        >>> from kedro_datasets.tensorflow import TensorFlowModelDataset
         >>> import tensorflow as tf
         >>> import numpy as np
         >>>
-        >>> data_set = TensorFlowModelDataSet("data/06_models/tensorflow_model.h5")
+        >>> data_set = TensorFlowModelDataset("data/06_models/tensorflow_model.h5")
         >>> model = tf.keras.Model()
         >>> predictions = model.predict([...])
         >>>
@@ -60,8 +60,8 @@ class TensorFlowModelDataSet(AbstractVersionedDataSet[tf.keras.Model, tf.keras.M
 
     """
 
-    DEFAULT_LOAD_ARGS: Dict[str, Any] = {}
-    DEFAULT_SAVE_ARGS: Dict[str, Any] = {"save_format": "tf"}
+    DEFAULT_LOAD_ARGS = {}  # type: Dict[str, Any]
+    DEFAULT_SAVE_ARGS = {"save_format": "tf"}  # type: Dict[str, Any]
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -73,7 +73,7 @@ class TensorFlowModelDataSet(AbstractVersionedDataSet[tf.keras.Model, tf.keras.M
         credentials: Dict[str, Any] = None,
         fs_args: Dict[str, Any] = None,
     ) -> None:
-        """Creates a new instance of ``TensorFlowModelDataSet``.
+        """Creates a new instance of ``TensorFlowModelDataset``.
 
         Args:
             filepath: Filepath in POSIX format to a TensorFlow model directory prefixed with a

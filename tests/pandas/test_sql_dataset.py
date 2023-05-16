@@ -65,7 +65,7 @@ class TestSQLTableDataSet:
 
     @staticmethod
     def _assert_sqlalchemy_called_once(*args):
-        _callable = sqlalchemy.engine.reflection.Inspector.has_table
+        _callable = sqlalchemy.engine.Engine.table_names
         if args:
             _callable.assert_called_once_with(*args)
         else:
@@ -127,30 +127,24 @@ class TestSQLTableDataSet:
 
     def test_table_exists(self, mocker, table_data_set):
         """Test `exists` method invocation"""
-        mocker.patch(
-            "sqlalchemy.engine.reflection.Inspector.has_table", return_value=False
-        )
+        mocker.patch("sqlalchemy.engine.Engine.table_names")
         assert not table_data_set.exists()
-        self._assert_sqlalchemy_called_once(TABLE_NAME, None)
+        self._assert_sqlalchemy_called_once()
 
     @pytest.mark.parametrize(
         "table_data_set", [{"load_args": {"schema": "ingested"}}], indirect=True
     )
     def test_table_exists_schema(self, mocker, table_data_set):
         """Test `exists` method invocation with DB schema provided"""
-        mocker.patch(
-            "sqlalchemy.engine.reflection.Inspector.has_table", return_value=False
-        )
+        mocker.patch("sqlalchemy.engine.Engine.table_names")
         assert not table_data_set.exists()
-        self._assert_sqlalchemy_called_once(TABLE_NAME, "ingested")
+        self._assert_sqlalchemy_called_once("ingested")
 
     def test_table_exists_mocked(self, mocker, table_data_set):
         """Test `exists` method invocation with mocked list of tables"""
-        mocker.patch(
-            "sqlalchemy.engine.reflection.Inspector.has_table", return_value=True
-        )
+        mocker.patch("sqlalchemy.engine.Engine.table_names", return_value=[TABLE_NAME])
         assert table_data_set.exists()
-        self._assert_sqlalchemy_called_once(TABLE_NAME, None)
+        self._assert_sqlalchemy_called_once()
 
     def test_load_sql_params(self, mocker, table_data_set):
         """Test `load` method invocation"""

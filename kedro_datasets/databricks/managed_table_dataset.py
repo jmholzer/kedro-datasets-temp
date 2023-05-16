@@ -4,9 +4,13 @@ in Databricks.
 import logging
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
+from functools import partial
+from operator import attrgetter
+from typing import Any, Dict, List, Union
 
 import pandas as pd
+from cachetools import Cache, cachedmethod
+from cachetools.keys import hashkey
 from kedro.io.core import (
     AbstractVersionedDataSet,
     DataSetError,
@@ -33,7 +37,7 @@ class ManagedTable:  # pylint: disable=R0902
     table: str
     write_mode: str
     dataframe_type: str
-    primary_key: Optional[str]
+    primary_key: str
     owner_group: str
     partition_columns: Union[str, List[str]]
     json_schema: StructType
@@ -46,8 +50,7 @@ class ManagedTable:  # pylint: disable=R0902
             `validate_<field_name>(self, value) -> raises DataSetError`
         """
         for name, _ in self.__dataclass_fields__.items():  # pylint: disable=E1101
-            method = getattr(self, f"validate_{name}", None)
-            if method:
+            if method := getattr(self, f"validate_{name}", None):
                 method()
 
     def validate_table(self):
@@ -63,7 +66,7 @@ class ManagedTable:  # pylint: disable=R0902
         """validates database name
 
         Raises:
-            DataSetError: If the table name does not conform to naming constraints.
+            DataSetError:
         """
         if self.database:
             if not re.fullmatch(self._NAMING_REGEX, self.database):
@@ -73,7 +76,7 @@ class ManagedTable:  # pylint: disable=R0902
         """validates catalog name
 
         Raises:
-            DataSetError: If the catalog name does not conform to naming constraints.
+            DataSetError:
         """
         if self.catalog:
             if not re.fullmatch(self._NAMING_REGEX, self.catalog):
@@ -83,7 +86,7 @@ class ManagedTable:  # pylint: disable=R0902
         """validates the write mode
 
         Raises:
-            DataSetError: If an invalid `write_mode` is passed.
+            DataSetError:
         """
         if self.write_mode not in self._VALID_WRITE_MODES:
             valid_modes = ", ".join(self._VALID_WRITE_MODES)
@@ -96,7 +99,7 @@ class ManagedTable:  # pylint: disable=R0902
         """validates the dataframe type
 
         Raises:
-            DataSetError: If an invalid `dataframe_type` is passed
+            DataSetError:
         """
         if self.dataframe_type not in self._VALID_DATAFRAME_TYPES:
             valid_types = ", ".join(self._VALID_DATAFRAME_TYPES)
@@ -106,7 +109,7 @@ class ManagedTable:  # pylint: disable=R0902
         """validates the primary key of the table
 
         Raises:
-            DataSetError: If no `primary_key` is specified.
+            DataSetError:
         """
         if self.primary_key is None or len(self.primary_key) == 0:
             if self.write_mode == "upsert":
@@ -138,7 +141,7 @@ class ManagedTable:  # pylint: disable=R0902
         try:
             if self.json_schema is not None:
                 schema = StructType.fromJson(self.json_schema)
-        except (KeyError, ValueError) as exc:
+        except ParseException as exc:
             raise DataSetError(exc) from exc
         return schema
 
@@ -146,7 +149,7 @@ class ManagedTable:  # pylint: disable=R0902
 class ManagedTableDataSet(AbstractVersionedDataSet):
     """``ManagedTableDataSet`` loads and saves data into managed delta tables on Databricks.
         Load and save can be in Spark or Pandas dataframes, specified in dataframe_type.
-        When saving data, you can specify one of three modes: overwrite(default), append,
+        When saving data, you can specify one of three modes: overwtire(default), append,
         or upsert. Upsert requires you to specify the primary_column parameter which
         will be used as part of the join condition. This dataset works best with
         the databricks kedro starter. That starter comes with hooks that allow this
@@ -171,20 +174,24 @@ class ManagedTableDataSet(AbstractVersionedDataSet):
         Example usage for the
         `Python API <https://kedro.readthedocs.io/en/stable/data/\
         data_catalog.html#use-the-data-catalog-with-the-code-api>`_:
-        .. code-block:: python
+        ::
 
-            from pyspark.sql import SparkSession
-            from pyspark.sql.types import (StructField, StringType,
+            % pyspark --packages io.delta:delta-core_2.12:1.2.1
+            --conf "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension"
+            --conf "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
+
+            >>> from pyspark.sql import SparkSession
+            >>> from pyspark.sql.types import (StructField, StringType,
                                             IntegerType, StructType)
-            from kedro_datasets.databricks import ManagedTableDataSet
-            schema = StructType([StructField("name", StringType(), True),
-                                 StructField("age", IntegerType(), True)])
-            data = [('Alex', 31), ('Bob', 12), ('Clarke', 65), ('Dave', 29)]
-            spark_df = SparkSession.builder.getOrCreate().createDataFrame(data, schema)
-            data_set = ManagedTableDataSet(table="names_and_ages")
-            data_set.save(spark_df)
-            reloaded = data_set.load()
-            reloaded.take(4)
+            >>> from kedro_datasets.databricks import ManagedTableDataSet
+            >>> schema = StructType([StructField("name", StringType(), True),
+                                    StructField("age", IntegerType(), True)])
+            >>> data = [('Alex', 31), ('Bob', 12), ('Clarke', 65), ('Dave', 29)]
+            >>> spark_df = SparkSession.builder.getOrCreate().createDataFrame(data, schema)
+            >>> data_set = ManagedTableDataSet(table="names_and_ages")
+            >>> data_set.save(spark_df)
+            >>> reloaded = data_set.load()
+            >>> reloaded.take(4)
         """
 
     # this dataset cannot be used with ``ParallelRunner``,
@@ -200,7 +207,7 @@ class ManagedTableDataSet(AbstractVersionedDataSet):
         database: str = "default",
         write_mode: str = "overwrite",
         dataframe_type: str = "spark",
-        primary_key: Optional[Union[str, List[str]]] = None,
+        primary_key: Union[str, List[str]] = None,
         version: Version = None,
         *,
         # the following parameters are used by project hooks
@@ -215,7 +222,7 @@ class ManagedTableDataSet(AbstractVersionedDataSet):
             table (str): the name of the table
             catalog (str, optional): the name of the catalog in Unity.
              Defaults to None.
-            database (str, optional): the name of the database.
+            database (str, optional): the name of the database
              (also referred to as schema). Defaults to "default".
             write_mode (str, optional): the mode to write the data into the table.
              Options are:["overwrite", "append", "upsert"].
@@ -252,6 +259,7 @@ class ManagedTableDataSet(AbstractVersionedDataSet):
             json_schema=schema,
         )
 
+        self._version_cache = Cache(maxsize=2)
         self._version = version
 
         super().__init__(
@@ -259,6 +267,28 @@ class ManagedTableDataSet(AbstractVersionedDataSet):
             version=version,
             exists_function=self._exists,
         )
+
+    @cachedmethod(cache=attrgetter("_version_cache"), key=partial(hashkey, "load"))
+    def _fetch_latest_load_version(self) -> int:
+        # When load version is unpinned, fetch the most recent existing
+        # version from the given path.
+        latest_history = (
+            self._get_spark()
+            .sql(f"DESCRIBE HISTORY {self._table.full_table_location()} LIMIT 1")
+            .collect()
+        )
+        if len(latest_history) != 1:
+            raise VersionNotFoundError(
+                f"Did not find any versions for {self._table.full_table_location()}"
+            )
+        return latest_history[0].version
+
+    # 'key' is set to prevent cache key overlapping for load and save:
+    # https://cachetools.readthedocs.io/en/stable/#cachetools.cachedmethod
+    @cachedmethod(cache=attrgetter("_version_cache"), key=partial(hashkey, "save"))
+    def _fetch_latest_save_version(self) -> int:
+        """Generate and cache the current save version"""
+        return None
 
     @staticmethod
     def _get_spark() -> SparkSession:
@@ -285,7 +315,7 @@ class ManagedTableDataSet(AbstractVersionedDataSet):
                     .table(self._table.full_table_location())
                 )
             except Exception as exc:
-                raise VersionNotFoundError(self._version.load) from exc
+                raise VersionNotFoundError(self._version) from exc
         else:
             data = self._get_spark().table(self._table.full_table_location())
         if self._table.dataframe_type == "pandas":
@@ -399,7 +429,7 @@ class ManagedTableDataSet(AbstractVersionedDataSet):
             "write_mode": self._table.write_mode,
             "dataframe_type": self._table.dataframe_type,
             "primary_key": self._table.primary_key,
-            "version": str(self._version),
+            "version": self._version,
             "owner_group": self._table.owner_group,
             "partition_columns": self._table.partition_columns,
         }
@@ -413,7 +443,7 @@ class ManagedTableDataSet(AbstractVersionedDataSet):
         """
         if self._table.catalog:
             try:
-                self._get_spark().sql(f"USE CATALOG `{self._table.catalog}`")
+                self._get_spark().sql(f"USE CATALOG {self._table.catalog}")
             except (ParseException, AnalysisException) as exc:
                 logger.warning(
                     "catalog %s not found or unity not enabled. Error message: %s",
